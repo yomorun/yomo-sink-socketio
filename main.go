@@ -62,14 +62,14 @@ func newSocketIOServer() (*socketio.Server, error) {
 // serveSinkServer serves the Sink server over QUIC.
 func serveSinkServer(socketioServer *socketio.Server, addr string) {
 	log.Print("Starting sink server...")
-	quicHandler := &quicServerHandler{
+	handler := &quicServerHandler{
 		socketioServer,
 	}
-	quicServer := quic.NewServer(quicHandler)
+	quicServer := quic.NewServer(handler)
 
 	err := quicServer.ListenAndServe(context.Background(), addr)
 	if err != nil {
-		log.Printf("❌ Initialize the socket.io server failure with err: %v", err)
+		log.Printf("❌ Serve the sink server on %s failure with err: %v", addr, err)
 	}
 }
 
@@ -83,9 +83,11 @@ func (s *quicServerHandler) Listen() error {
 }
 
 func (s *quicServerHandler) Read(st quic.Stream) error {
-	// use rx (ReactiveX) to process the stream
-	// and decode the data via Y3 Codec.
-	rxStream := rx.FromReader(st).Y3Decoder("0x10", float32(0)).StdOut()
+	// receive the data from `yomo-flow` and use rx (ReactiveX) to process the stream.
+	rxStream := rx.FromReader(st).
+		Y3Decoder("0x10", float32(0)). // decode the data via Y3 Codec.
+		StdOut()
+
 	go func() {
 		for customer := range rxStream.Observe() {
 			if customer.Error() {
