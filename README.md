@@ -1,6 +1,6 @@
 # yomo-sink-socketio
 
-The example of [socket.io](https://socket.io/) for yomo-sink which can show the realtime data on a web page.
+The example of [socket.io](https://socket.io/) for yomo-sink which can be used to show the realtime data on a web page.
 
 ## How to run the example
 
@@ -35,6 +35,6 @@ socket.on('receive_sink', function (msg) {
 });
 ```
 
-## how `yomo-sink-socketio` works
+## How `yomo-sink-socketio` works
 
 ![YoMo](https://github.com/yomorun/yomo-sink-socketio/blob/main/yomo-sink.png)
