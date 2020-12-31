@@ -96,7 +96,6 @@ func (s *quicServerHandler) Read(st quic.Stream) error {
 				// broadcast message to all connected user.
 				s.socketioServer.BroadcastToRoom("", socketioRoom, "receive_sink", customer.V)
 			}
-			st.Write([]byte("Received data."))
 		}
 	}()
 
