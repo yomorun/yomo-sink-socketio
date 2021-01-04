@@ -24,7 +24,7 @@ It contains two servers:
 
 > BTW, you are [free to change the ports](https://github.com/yomorun/yomo-sink-socketio/blob/main/main.go#L15) of these two servers.
 
-You can config the address of yomo-sink-socketio `localhost:4141` in [workflow.yaml](https://github.com/yomorun/yomo/blob/master/example/workflow.yaml), run [yomo-zipper](https://github.com/yomorun/yomo) and [yomo-source-demo](https://github.com/yomorun/yomo-source-demo), visit `http://localhost:8000/` in browser, then it will show the data in realtime.
+You can config the address of yomo-sink-socketio `localhost:4141` in [workflow.yaml](https://github.com/yomorun/yomo/blob/master/example/workflow.yaml), run [yomo-zipper](https://github.com/yomorun/yomo) and [yomo-source-demo](https://github.com/yomorun/yomo-source-demo), visit `http://localhost:8000/public` in browser, then it will show the data in realtime.
 
 ## How to receive and show the data on web page
 

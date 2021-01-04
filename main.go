@@ -5,6 +5,8 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/gin-gonic/gin"
+
 	socketio "github.com/googollee/go-socket.io"
 	"github.com/yomorun/yomo/pkg/quic"
 	"github.com/yomorun/yomo/pkg/rx"
@@ -30,8 +32,13 @@ func main() {
 	go socketioServer.Serve()
 	defer socketioServer.Close()
 
-	http.Handle("/socket.io/", socketioServer)
-	http.Handle("/", http.FileServer(http.Dir("./asset")))
+	router := gin.New()
+	router.Use(ginMiddleware("*"))
+	router.GET("/socket.io/*any", gin.WrapH(socketioServer))
+	router.POST("/socket.io/*any", gin.WrapH(socketioServer))
+	router.StaticFS("/public", http.Dir("./asset"))
+	router.Run(socketioAddr)
+
 	log.Print("✅ Serving socket.io on ", socketioAddr)
 	err = http.ListenAndServe(socketioAddr, nil)
 	if err != nil {
@@ -70,6 +77,24 @@ func serveSinkServer(socketioServer *socketio.Server, addr string) {
 	err := quicServer.ListenAndServe(context.Background(), addr)
 	if err != nil {
 		log.Printf("❌ Serve the sink server on %s failure with err: %v", addr, err)
+	}
+}
+
+func ginMiddleware(allowOrigin string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", allowOrigin)
+		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Accept, Authorization, Content-Type, Content-Length, X-CSRF-Token, Token, session, Origin, Host, Connection, Accept-Encoding, Accept-Language, X-Requested-With")
+
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+
+		c.Request.Header.Del("Origin")
+
+		c.Next()
 	}
 }
 
