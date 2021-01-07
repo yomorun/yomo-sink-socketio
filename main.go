@@ -33,7 +33,7 @@ func main() {
 	defer socketioServer.Close()
 
 	router := gin.New()
-	router.Use(ginMiddleware("*"))
+	router.Use(ginMiddleware())
 	router.GET("/socket.io/*any", gin.WrapH(socketioServer))
 	router.POST("/socket.io/*any", gin.WrapH(socketioServer))
 	router.StaticFS("/public", http.Dir("./asset"))
@@ -80,9 +80,11 @@ func serveSinkServer(socketioServer *socketio.Server, addr string) {
 	}
 }
 
-func ginMiddleware(allowOrigin string) gin.HandlerFunc {
+func ginMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", allowOrigin)
+		requestOrigin := c.Request.Header.Get("Origin")
+
+		c.Writer.Header().Set("Access-Control-Allow-Origin", requestOrigin)
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Accept, Authorization, Content-Type, Content-Length, X-CSRF-Token, Token, session, Origin, Host, Connection, Accept-Encoding, Accept-Language, X-Requested-With")
@@ -110,8 +112,7 @@ func (s *quicServerHandler) Listen() error {
 func (s *quicServerHandler) Read(st quic.Stream) error {
 	// receive the data from `yomo-flow` and use rx (ReactiveX) to process the stream.
 	rxStream := rx.FromReader(st).
-		Y3Decoder("0x10", float32(0)). // decode the data via Y3 Codec.
-		StdOut()
+		Y3Decoder("0x10", float32(0)) // decode the data via Y3 Codec.
 
 	go func() {
 		for customer := range rxStream.Observe() {
