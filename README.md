@@ -1,6 +1,6 @@
 # yomo-sink-socketio
 
-The example of [socket.io](https://socket.io/) for yomo-sink which can be used to show the realtime data on a web page.
+The example of [socket.io](https://socket.io/) for yomo-sink which can be used to show the real-time data on a web page.
 
 ## How to run the example
 
@@ -19,12 +19,14 @@ You will see the following message:
 
 It contains two servers:
 
-1. **socket.io server**: accept the connections from socket.io clients (web pages) and broadcast the realtime data to clients.
-2. **sink server**: receive the realtime data from `yomo-flow` and use [socket.io](https://socket.io/) to push the realtime data to web pages.
+1. **socket.io server**: accept the connections from socket.io clients (web pages) and broadcast the real-time data to clients.
+2. **sink server**: receive the real-time data from `yomo-flow` and use [socket.io](https://socket.io/) to push the real-time data to web pages.
 
 > BTW, you are [free to change the ports](https://github.com/yomorun/yomo-sink-socketio/blob/main/main.go#L15) of these two servers.
 
-You can config the address of yomo-sink-socketio `localhost:4141` in [workflow.yaml](https://github.com/yomorun/yomo/blob/master/example/workflow.yaml), run [yomo-zipper](https://github.com/yomorun/yomo) and [yomo-source-demo](https://github.com/yomorun/yomo-source-demo), visit `http://localhost:8000/public` in browser, then it will show the data in realtime.
+You can run [yomo-zipper](https://yomo.run/zipper) and [yomo-source-demo](https://github.com/yomorun/yomo-source-demo), visit `http://localhost:8000/public` in browser, then it will show the data in real-time.
+
+See [yomo-zipper](https://yomo.run/zipper#how-to-config-and-run-yomo-zipper) for details.
 
 ## How to receive and show the data on web page
 
