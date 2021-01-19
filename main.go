@@ -25,7 +25,7 @@ func main() {
 		return
 	}
 
-	// sink server which will receive the data from `yomo-sink`.
+	// sink server which will receive the data from `yomo-zipper`.
 	go serveSinkServer(socketioServer, sinkServerAddr)
 
 	// serve socket.io server.

@@ -24,7 +24,7 @@ It contains two servers:
 
 > BTW, you are [free to change the ports](https://github.com/yomorun/yomo-sink-socketio/blob/main/main.go#L15) of these two servers.
 
-You can run [yomo-zipper](https://yomo.run/zipper) and [yomo-source-demo](https://github.com/yomorun/yomo-source-demo), visit `http://localhost:8000/public` in browser, then it will show the data in real-time.
+You can run [yomo-zipper](https://yomo.run/zipper) and visit `http://localhost:8000/public` in browser, then it will show the data in real-time.
 
 See [yomo-zipper](https://yomo.run/zipper#how-to-config-and-run-yomo-zipper) for details.
 
@@ -46,6 +46,8 @@ import { io } from 'socket.io-client';
 // CommonJS
 const io = require('socket.io-client');
 ```
+
+> **Note:** it doesn't support socket.io-client v3.
 
 - Code snippet
 
