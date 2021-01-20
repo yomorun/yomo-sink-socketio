@@ -1,6 +1,6 @@
 # yomo-sink-socketio
 
-The example of [socket.io](https://socket.io/) for yomo-sink which can be used to show the real-time data on a web page.
+The example of [socket.io](https://socket.io/) for [yomo-sink](https://yomo.run/sink) which can be used to show the real-time data on a web page.
 
 ## How to run the example
 
@@ -27,7 +27,7 @@ It contains two servers:
 
 ### Run `yomo-zipper`
 
-You can use the command `yomo wf dev workflow.yaml` to run [yomo-zipper](https://yomo.run/zipper) which will automatically receive the real noise data from CELLA office, or run `yomo wf run workflow.yaml` with the specific `yomo-source`. See [yomo-zipper](https://yomo.run/zipper#how-to-config-and-run-yomo-zipper) for details.
+In order to experience the real-time data processing in YoMo, you can use the command `yomo wf dev workflow.yaml` to run [yomo-zipper](https://yomo.run/zipper) which will automatically receive the real noise data from CELLA office, or run `yomo wf run workflow.yaml` with the specific [yomo-source](https://yomo.run/source). See [yomo-zipper](https://yomo.run/zipper#how-to-config-and-run-yomo-zipper) for details.
 
 After running `yomo-zipper`, you can visit `http://localhost:8000/public` in browser, it will show the data in real-time.
 
