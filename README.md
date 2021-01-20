@@ -24,9 +24,12 @@ It contains two servers:
 
 > BTW, you are [free to change the ports](https://github.com/yomorun/yomo-sink-socketio/blob/main/main.go#L15) of these two servers.
 
-You can run [yomo-zipper](https://yomo.run/zipper) and visit `http://localhost:8000/public` in browser, then it will show the data in real-time.
 
-See [yomo-zipper](https://yomo.run/zipper#how-to-config-and-run-yomo-zipper) for details.
+### Run `yomo-zipper`
+
+You can use the command `yomo wf dev workflow.yaml` to run [yomo-zipper](https://yomo.run/zipper) which will automatically receive the real noise data from CELLA office, or run `yomo wf run workflow.yaml` with the specific `yomo-source`. See [yomo-zipper](https://yomo.run/zipper#how-to-config-and-run-yomo-zipper) for details.
+
+After running `yomo-zipper`, you can visit `http://localhost:8000/public` in browser, it will show the data in real-time.
 
 ## How to receive and show the data on web page
 
