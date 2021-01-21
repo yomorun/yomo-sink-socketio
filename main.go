@@ -8,9 +8,15 @@ import (
 	"github.com/gin-gonic/gin"
 
 	socketio "github.com/googollee/go-socket.io"
+	y3 "github.com/yomorun/y3-codec-golang"
 	"github.com/yomorun/yomo/pkg/quic"
-	"github.com/yomorun/yomo/pkg/rx"
 )
+
+type noiseData struct {
+	Noise float32 `yomo:"0x11" json:"noise"` // Noise value
+	Time  int64   `yomo:"0x12" json:"time"`  // Timestamp (ms)
+	From  string  `yomo:"0x13" json:"from"`  // Source IP
+}
 
 const (
 	socketioRoom   = "yomo-demo"
@@ -110,20 +116,33 @@ func (s *quicServerHandler) Listen() error {
 }
 
 func (s *quicServerHandler) Read(st quic.Stream) error {
-	// receive the data from `yomo-flow` and use rx (ReactiveX) to process the stream.
-	rxStream := rx.FromReader(st).
-		Y3Decoder("0x10", float32(0)) // decode the data via Y3 Codec.
+	// decode the data via Y3 Codec.
+	ch := y3.
+		FromStream(st).
+		Subscribe(0x10).
+		OnObserve(onObserve)
 
 	go func() {
-		for customer := range rxStream.Observe() {
-			if customer.Error() {
-				log.Print(customer.E.Error())
-			} else if customer.V != nil {
+		for {
+			item, ok := <-ch
+			if ok {
 				// broadcast message to all connected user.
-				s.socketioServer.BroadcastToRoom("", socketioRoom, "receive_sink", customer.V)
+				s.socketioServer.BroadcastToRoom("", socketioRoom, "receive_sink", item)
 			}
 		}
 	}()
 
 	return nil
+}
+
+func onObserve(v []byte) (interface{}, error) {
+	// decode the data via Y3 Codec.
+	data := noiseData{}
+	err := y3.ToObject(v, &data)
+	if err != nil {
+		log.Print(err)
+		return nil, err
+	}
+
+	return data, nil
 }
