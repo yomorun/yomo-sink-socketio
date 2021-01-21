@@ -123,12 +123,9 @@ func (s *quicServerHandler) Read(st quic.Stream) error {
 		OnObserve(onObserve)
 
 	go func() {
-		for {
-			item, ok := <-ch
-			if ok {
-				// broadcast message to all connected user.
-				s.socketioServer.BroadcastToRoom("", socketioRoom, "receive_sink", item)
-			}
+		for item := range ch {
+			// broadcast message to all connected user.
+			s.socketioServer.BroadcastToRoom("", socketioRoom, "receive_sink", item)
 		}
 	}()
 
