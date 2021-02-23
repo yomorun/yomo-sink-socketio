@@ -13,9 +13,9 @@ import (
 )
 
 type noiseData struct {
-	Noise float32 `yomo:"0x11" json:"noise"` // Noise value
-	Time  int64   `yomo:"0x12" json:"time"`  // Timestamp (ms)
-	From  string  `yomo:"0x13" json:"from"`  // Source IP
+	Noise float32 `y3:"0x11" json:"noise"` // Noise value
+	Time  int64   `y3:"0x12" json:"time"`  // Timestamp (ms)
+	From  string  `y3:"0x13" json:"from"`  // Source IP
 }
 
 const (
