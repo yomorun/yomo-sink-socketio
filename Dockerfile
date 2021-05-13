@@ -13,6 +13,6 @@ WORKDIR $GOPATH/src/github.com/yomorun/yomo-sink-socketio-server-example
 COPY . .
 RUN go get -d -v ./...
 
-EXPOSE 4141/udp 8000
+EXPOSE 4141/udp 8003
 
 CMD ["sh", "-c", "go run main.go"]

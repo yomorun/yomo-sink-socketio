@@ -2,13 +2,13 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
-
-	socketio "github.com/googollee/go-socket.io"
+	"github.com/gorilla/websocket"
 	y3 "github.com/yomorun/y3-codec-golang"
+	"github.com/yomorun/yomo-sink-socketio-server-example/ws"
 	"github.com/yomorun/yomo/pkg/quic"
 )
 
@@ -19,65 +19,82 @@ type noiseData struct {
 }
 
 const (
-	socketioRoom   = "yomo-demo"
-	socketioAddr   = "0.0.0.0:8000"
+	wsAddr         = "0.0.0.0:8003"
 	sinkServerAddr = "0.0.0.0:4141"
 )
 
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+}
+var hub *ws.Hub
+
 func main() {
-	socketioServer, err := newSocketIOServer()
+	// sink server which will receive the data from `yomo-zipper`.
+	go serveSinkServer(sinkServerAddr)
+
+	// WebSocket server
+	hub = ws.NewHub()
+	go hub.Run()
+	http.HandleFunc("/", serveHome)
+	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		serveWS(hub, w, r)
+	})
+	log.Print("✅ Serving WebSocket on ", wsAddr)
+	log.Fatal(http.ListenAndServe(wsAddr, nil))
+}
+
+// serveWS handles websocket requests from the peer.
+func serveWS(hub *ws.Hub, w http.ResponseWriter, r *http.Request) {
+	// CORS
+	upgrader.CheckOrigin = func(r *http.Request) bool {
+		// always return true when checking origin
+		return true
+	}
+
+	// represents a WebSocket connection
+	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Printf("❌ Initialize the socket.io server failure with err: %v", err)
+		log.Println(err)
 		return
 	}
 
-	// sink server which will receive the data from `yomo-zipper`.
-	go serveSinkServer(socketioServer, sinkServerAddr)
+	client := &ws.Client{Hub: hub, Conn: conn, Send: make(chan []byte, 256)}
+	client.Hub.Register <- client
 
-	// serve socket.io server.
-	go socketioServer.Serve()
-	defer socketioServer.Close()
+	// Allow collection of memory referenced by the caller by doing all work in
+	// new goroutines.
+	go client.WritePump()
+}
 
-	router := gin.New()
-	router.Use(ginMiddleware())
-	router.GET("/socket.io/*any", gin.WrapH(socketioServer))
-	router.POST("/socket.io/*any", gin.WrapH(socketioServer))
-	router.StaticFS("/public", http.Dir("./asset"))
-	router.Run(socketioAddr)
-
-	log.Print("✅ Serving socket.io on ", socketioAddr)
-	err = http.ListenAndServe(socketioAddr, nil)
-	if err != nil {
-		log.Printf("❌ Serving the socket.io server on %s failure with err: %v", socketioAddr, err)
+func broadcastData(data interface{}) {
+	if hub == nil || data == nil {
 		return
+	}
+	b, err := json.Marshal(data)
+	if err != nil {
+		log.Println(err)
+	} else {
+		hub.Broadcast <- b
 	}
 }
 
-func newSocketIOServer() (*socketio.Server, error) {
-	log.Print("Starting socket.io server...")
-	server, err := socketio.NewServer(nil)
-	if err != nil {
-		return nil, err
+func serveHome(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/" {
+		http.Error(w, "Not found", http.StatusNotFound)
+		return
 	}
-
-	// add all connected user to the room "yomo-demo".
-	server.OnConnect("/", func(s socketio.Conn) error {
-		s.SetContext("")
-		log.Print("connected:", s.ID())
-		s.Join(socketioRoom)
-
-		return nil
-	})
-
-	return server, nil
+	if r.Method != "GET" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	http.ServeFile(w, r, "asset/index.html")
 }
 
 // serveSinkServer serves the Sink server over QUIC.
-func serveSinkServer(socketioServer *socketio.Server, addr string) {
+func serveSinkServer(addr string) {
 	log.Print("Starting sink server...")
-	handler := &quicServerHandler{
-		socketioServer,
-	}
+	handler := &quicServerHandler{}
 	quicServer := quic.NewServer(handler)
 
 	err := quicServer.ListenAndServe(context.Background(), addr)
@@ -86,28 +103,7 @@ func serveSinkServer(socketioServer *socketio.Server, addr string) {
 	}
 }
 
-func ginMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		requestOrigin := c.Request.Header.Get("Origin")
-
-		c.Writer.Header().Set("Access-Control-Allow-Origin", requestOrigin)
-		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Accept, Authorization, Content-Type, Content-Length, X-CSRF-Token, Token, session, Origin, Host, Connection, Accept-Encoding, Accept-Language, X-Requested-With")
-
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(204)
-			return
-		}
-
-		c.Request.Header.Del("Origin")
-
-		c.Next()
-	}
-}
-
 type quicServerHandler struct {
-	socketioServer *socketio.Server
 }
 
 func (s *quicServerHandler) Listen() error {
@@ -125,7 +121,7 @@ func (s *quicServerHandler) Read(st quic.Stream) error {
 	go func() {
 		for item := range ch {
 			// broadcast message to all connected user.
-			s.socketioServer.BroadcastToRoom("", socketioRoom, "receive_sink", item)
+			broadcastData(item)
 		}
 	}()
 
