@@ -16,7 +16,7 @@ function updateCount(item) {
 };
 
 function connect() {
-  var ws = new WebSocket("wss://" + document.location.host + "/v3/ws");
+  var ws = new WebSocket("ws://" + document.location.host + "/ws");
   ws.onmessage = function (e) {
     if (e.data) {
       const data = JSON.parse(e.data);

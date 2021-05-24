@@ -11,16 +11,15 @@ go run main.go
 You will see the following message:
 
 ```shell
-2020/12/30 19:40:40 Starting socket.io server...
-2020/12/30 19:40:40 ✅ Serving socket.io on 0.0.0.0:8000
-2020/12/30 19:40:40 Starting sink server...
-2020/12/30 19:40:40 ✅ Listening on 0.0.0.0:4141
+2021/05/24 17:52:15 ✅ Serving WebSocket on 0.0.0.0:8003
+2021/05/24 17:52:15 Connecting to zipper localhost:9000 ...
+2021/05/24 17:52:15 ✅ Connected to zipper localhost:9000
 ```
 
-It contains two servers:
+It contains two steps:
 
-1. **socket.io server**: accept the connections from socket.io clients (web pages) and broadcast the real-time data to clients.
-2. **sink server**: receive the real-time data from `yomo-flow` and use [socket.io](https://socket.io/) to push the real-time data to web pages.
+1. Serve **WebSocket server**: accept the connections from WebSocket clients (web pages) and broadcast the real-time data to clients.
+2. Connect to **yomo-zipper**: connect to [yomo-zipper](https://yomo.run/zipper), receive the real-time data from `yomo-zipper`, and use WebSocket to push the real-time data to web pages.
 
 > BTW, you are [free to change the ports](https://github.com/yomorun/yomo-sink-socketio/blob/main/main.go#L15) of these two servers.
 
