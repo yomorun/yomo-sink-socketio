@@ -2,15 +2,22 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 
 	socketio "github.com/googollee/go-socket.io"
 	y3 "github.com/yomorun/y3-codec-golang"
-	"github.com/yomorun/yomo/pkg/quic"
+	"github.com/yomorun/yomo/pkg/client"
+	"github.com/yomorun/yomo/pkg/rx"
 )
+
+// noiseDataKey represents the Tag of a Y3 encoded data packet.
+const noiseDataKey = 0x10
 
 type noiseData struct {
 	Noise float32 `y3:"0x11" json:"noise"` // Noise value
@@ -19,20 +26,26 @@ type noiseData struct {
 }
 
 const (
-	socketioRoom   = "yomo-demo"
-	socketioAddr   = "0.0.0.0:8000"
-	sinkServerAddr = "0.0.0.0:4141"
+	socketioRoom = "yomo-demo"
+	socketioAddr = "0.0.0.0:8000"
+	zipperAddr   = "localhost:9000"
+	serviceName  = "Noise"
+)
+
+var (
+	socketioServer *socketio.Server
+	err            error
 )
 
 func main() {
-	socketioServer, err := newSocketIOServer()
+	socketioServer, err = newSocketIOServer()
 	if err != nil {
 		log.Printf("❌ Initialize the socket.io server failure with err: %v", err)
 		return
 	}
 
 	// sink server which will receive the data from `yomo-zipper`.
-	go serveSinkServer(socketioServer, sinkServerAddr)
+	go connectToZipper(zipperAddr)
 
 	// serve socket.io server.
 	go socketioServer.Serve()
@@ -72,20 +85,6 @@ func newSocketIOServer() (*socketio.Server, error) {
 	return server, nil
 }
 
-// serveSinkServer serves the Sink server over QUIC.
-func serveSinkServer(socketioServer *socketio.Server, addr string) {
-	log.Print("Starting sink server...")
-	handler := &quicServerHandler{
-		socketioServer,
-	}
-	quicServer := quic.NewServer(handler)
-
-	err := quicServer.ListenAndServe(context.Background(), addr)
-	if err != nil {
-		log.Printf("❌ Serve the sink server on %s failure with err: %v", addr, err)
-	}
-}
-
 func ginMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		requestOrigin := c.Request.Header.Get("Origin")
@@ -106,39 +105,51 @@ func ginMiddleware() gin.HandlerFunc {
 	}
 }
 
-type quicServerHandler struct {
-	socketioServer *socketio.Server
-}
+// connectToZipper connects to `yomo-zipper` and receives the real-time data.
+func connectToZipper(zipperAddr string) error {
+	urls := strings.Split(zipperAddr, ":")
+	if len(urls) != 2 {
+		return fmt.Errorf(`❌ The format of url "%s" is incorrect, it should be "host:port", f.e. localhost:9000`, zipperAddr)
+	}
+	host := urls[0]
+	port, _ := strconv.Atoi(urls[1])
+	cli, err := client.NewServerless(serviceName).Connect(host, port)
+	if err != nil {
+		return err
+	}
+	defer cli.Close()
 
-func (s *quicServerHandler) Listen() error {
-	// you can add the customized codes which will be triggered when QUIC server is listening.
+	cli.Pipe(Handler)
 	return nil
 }
 
-func (s *quicServerHandler) Read(st quic.Stream) error {
-	// decode the data via Y3 Codec.
-	ch := y3.
-		FromStream(st).
-		Subscribe(0x10).
-		OnObserve(onObserve)
+// Handler receives the real-time data and broadcast it to socket.io clients.
+func Handler(rxstream rx.RxStream) rx.RxStream {
+	stream := rxstream.
+		Subscribe(noiseDataKey).
+		OnObserve(decode).
+		Map(broadcastData).
+		Encode(noiseDataKey)
 
-	go func() {
-		for item := range ch {
-			// broadcast message to all connected user.
-			s.socketioServer.BroadcastToRoom("", socketioRoom, "receive_sink", item)
-		}
-	}()
-
-	return nil
+	return stream
 }
 
-func onObserve(v []byte) (interface{}, error) {
+func decode(v []byte) (interface{}, error) {
 	// decode the data via Y3 Codec.
 	data := noiseData{}
 	err := y3.ToObject(v, &data)
 	if err != nil {
 		log.Print(err)
 		return nil, err
+	}
+
+	return data, nil
+}
+
+// broadcastData broadcasts the real-time data to socket.io clients.
+func broadcastData(_ context.Context, data interface{}) (interface{}, error) {
+	if socketioServer != nil && data != nil {
+		socketioServer.BroadcastToRoom("", socketioRoom, "receive_sink", data)
 	}
 
 	return data, nil

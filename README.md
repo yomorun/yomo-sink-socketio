@@ -4,6 +4,12 @@ The example of [socket.io](https://socket.io/) for [yomo-sink](https://yomo.run/
 
 ## How to run the example
 
+### 1. Run `yomo-zipper`
+
+In order to experience the real-time data processing in YoMo, you can use the command `yomo wf dev workflow.yaml` to run [yomo-zipper](https://yomo.run/zipper) which will automatically receive the real noise data from YoMo office, or run `yomo wf run workflow.yaml` with the specific [yomo-source](https://yomo.run/source). See [yomo-zipper](https://yomo.run/zipper#how-to-config-and-run-yomo-zipper) for details.
+
+### 2. Run `yomo-sink-socketio`
+
 ``` shell
 go run main.go
 ```
@@ -13,23 +19,20 @@ You will see the following message:
 ```shell
 2020/12/30 19:40:40 Starting socket.io server...
 2020/12/30 19:40:40 ✅ Serving socket.io on 0.0.0.0:8000
-2020/12/30 19:40:40 Starting sink server...
-2020/12/30 19:40:40 ✅ Listening on 0.0.0.0:4141
+2020/12/30 19:40:40 Connecting to zipper localhost:9000 ...
+2020/12/30 19:40:40 ✅ Connected to zipper localhost:9000
 ```
 
-It contains two servers:
+It contains two steps:
 
-1. **socket.io server**: accept the connections from socket.io clients (web pages) and broadcast the real-time data to clients.
-2. **sink server**: receive the real-time data from `yomo-flow` and use [socket.io](https://socket.io/) to push the real-time data to web pages.
+1. Serve **socket.io server**: accept the connections from socket.io clients (web pages) and broadcast the real-time data to clients.
+2. Connect to **yomo-zipper**: connect to [yomo-zipper](https://yomo.run/zipper), receive the real-time data from `yomo-zipper`, and broadcast it to socket.io clients.
 
-> BTW, you are [free to change the ports](https://github.com/yomorun/yomo-sink-socketio/blob/main/main.go#L15) of these two servers.
+> BTW, you are [free to change the ports](https://github.com/yomorun/yomo-sink-socketio/blob/main/main.go#L30) of the servers.
 
+### 3. Receive real-time data on webpage
 
-### Run `yomo-zipper`
-
-In order to experience the real-time data processing in YoMo, you can use the command `yomo wf dev workflow.yaml` to run [yomo-zipper](https://yomo.run/zipper) which will automatically receive the real noise data from CELLA office, or run `yomo wf run workflow.yaml` with the specific [yomo-source](https://yomo.run/source). See [yomo-zipper](https://yomo.run/zipper#how-to-config-and-run-yomo-zipper) for details.
-
-After running `yomo-zipper`, you can visit `http://localhost:8000/public` in browser, it will show the data in real-time.
+Visit `http://localhost:8000/public` in browser, it will show the data in real-time.
 
 ## How to receive and show the data on web page
 
