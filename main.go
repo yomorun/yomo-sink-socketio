@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 
@@ -28,13 +29,13 @@ type noiseData struct {
 const (
 	socketioRoom = "yomo-demo"
 	socketioAddr = "0.0.0.0:8000"
-	zipperAddr   = "localhost:9000"
-	serviceName  = "Noise"
 )
 
 var (
 	socketioServer *socketio.Server
 	err            error
+	appName        = getEnvString("YOMO_SINK_APP_NAME", "Noise")
+	zipperAddr     = getEnvString("YOMO_SINK_ZIPPER_ADDR", "localhost:9000")
 )
 
 func main() {
@@ -113,7 +114,7 @@ func connectToZipper(zipperAddr string) error {
 	}
 	host := urls[0]
 	port, _ := strconv.Atoi(urls[1])
-	cli, err := client.NewServerless(serviceName).Connect(host, port)
+	cli, err := client.NewServerless(appName).Connect(host, port)
 	if err != nil {
 		return err
 	}
@@ -149,8 +150,18 @@ func decode(v []byte) (interface{}, error) {
 // broadcastData broadcasts the real-time data to socket.io clients.
 func broadcastData(_ context.Context, data interface{}) (interface{}, error) {
 	if socketioServer != nil && data != nil {
+		//fmt.Println(fmt.Sprintf("broadcast %s data: %v", socketioRoom, data))
 		socketioServer.BroadcastToRoom("", socketioRoom, "receive_sink", data)
 	}
 
 	return data, nil
+}
+
+// get value from env
+func getEnvString(key string, defaultValue string) string {
+	value := os.Getenv(key)
+	if len(value) != 0 {
+		return value
+	}
+	return defaultValue
 }
