@@ -11,7 +11,7 @@ In order to experience the real-time data processing in YoMo, you can use the co
 ### 2. Run `yomo-sink-socketio`
 
 ``` shell
-go run main.go
+YOMO_SINK_APP_NAME=SocketServer YOMO_SINK_ZIPPER_ADDR=localhost:9999 go run main.go
 ```
 
 You will see the following message:
